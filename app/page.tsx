@@ -16,7 +16,7 @@ interface Schedule {
   location: {
     name: string
     description?: string
-  }
+  } | null
   startTime: string
   endTime: string
   isSubstitute?: boolean
@@ -33,9 +33,17 @@ export default function HomePage() {
       try {
         const response = await fetch("/api/schedules/current")
         const data = await response.json()
-        setSchedules(data)
+        
+        // Check if the response is an array
+        if (Array.isArray(data)) {
+          setSchedules(data)
+        } else {
+          console.error("Invalid response format:", data)
+          setSchedules([])
+        }
       } catch (error) {
         console.error("Failed to fetch schedules:", error)
+        setSchedules([])
       } finally {
         setLoading(false)
       }
@@ -124,9 +132,9 @@ export default function HomePage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-gray-800 mb-1">
-                        {schedule.location.name}
+                        {schedule.location ? schedule.location.name : 'Όλοι οι χώροι'}
                       </h3>
-                      {schedule.location.description && (
+                      {schedule.location?.description && (
                         <p className="text-sm text-gray-500">
                           {schedule.location.description}
                         </p>
