@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Teacher {
+  id        String     @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  subject   String?    // The subject/lesson the teacher teaches
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  schedules Schedule[] @relation("MainTeacher")
+  substituteSchedules Schedule[] @relation("SubstituteTeacher")
+  absences  Absence[]
+  substituting Substitution[] @relation("SubstituteTeacher")
+}
+
+model Location {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  schedules   Schedule[]
+}
+
+model Schedule {
+  id                  String   @id @default(cuid())
+  teacherId           String
+  locationId          String?  // Optional - not required for substitutional teachers
+  substituteTeacherId String?  // Optional backup teacher
+  isSubstitutional    Boolean  @default(false) // Marks if this teacher is substitutional
+  dayOfWeek           Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime           String   // Format: "HH:MM"
+  endTime             String   // Format: "HH:MM"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  teacher           Teacher   @relation("MainTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  substituteTeacher Teacher?  @relation("SubstituteTeacher", fields: [substituteTeacherId], references: [id], onDelete: SetNull)
+  location          Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([dayOfWeek, startTime, endTime])
+  @@index([teacherId])
+  @@index([locationId])
+  @@index([substituteTeacherId])
+}
+
+model Absence {
+  id          String         @id @default(cuid())
+  teacherId   String
+  date        String         // Format: "YYYY-MM-DD"
+  reason      String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  teacher       Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  substitutions Substitution[]
+
+  @@index([teacherId, date])
+  @@index([date])
+}
+
+model Substitution {
+  id                String   @id @default(cuid())
+  absenceId         String
+  substituteTeacherId String
+  scheduleId        String?  // Optional: specific schedule being covered
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  absence          Absence  @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+  substituteTeacher Teacher @relation("SubstituteTeacher", fields: [substituteTeacherId], references: [id], onDelete: Cascade)
+
+  @@index([absenceId])
+  @@index([substituteTeacherId])
+}
