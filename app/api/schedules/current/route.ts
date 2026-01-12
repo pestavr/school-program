@@ -45,7 +45,8 @@ export async function GET() {
         },
         endTime: {
           gte: currentTime
-        }
+        },
+        isSubstitutional: false // Exclude substitutional teachers from regular display
       },
       include: {
         teacher: true,
