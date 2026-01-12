@@ -37,6 +37,7 @@ export async function GET() {
     })
     const currentDate = dateFormatter.format(now) // YYYY-MM-DD format
 
+    // Get regular schedules (non-substitutional teachers)
     const schedules = await prisma.schedule.findMany({
       where: {
         dayOfWeek: currentDay,
@@ -46,48 +47,61 @@ export async function GET() {
         endTime: {
           gte: currentTime
         },
-        isSubstitutional: false // Exclude substitutional teachers from regular display
+        isSubstitutional: false
       },
       include: {
         teacher: true,
-        location: true
+        location: true,
+        substituteTeacher: true
       }
     })
 
-    // Check for absences and substitutions
-    const schedulesWithSubstitutes = await Promise.all(
-      schedules.map(async (schedule) => {
-        const absence = await prisma.absence.findFirst({
-          where: {
-            teacherId: schedule.teacherId,
-            date: currentDate
-          },
+    // Get all absences for today
+    const todayAbsences = await prisma.absence.findMany({
+      where: {
+        date: currentDate
+      },
+      include: {
+        teacher: true,
+        substitutions: {
           include: {
-            substitutions: {
-              include: {
-                substituteTeacher: true
-              }
-            }
-          }
-        })
-
-        if (absence && absence.substitutions.length > 0) {
-          // Teacher is absent and has a substitute
-          return {
-            ...schedule,
-            originalTeacher: schedule.teacher,
-            teacher: absence.substitutions[0].substituteTeacher,
-            isSubstitute: true,
-            absenceReason: absence.reason
+            substituteTeacher: true
           }
         }
+      }
+    })
 
+    // Build a map of absent teacher IDs to their substitutes
+    const absentTeacherMap = new Map()
+    todayAbsences.forEach(absence => {
+      if (absence.substitutions.length > 0) {
+        absentTeacherMap.set(absence.teacherId, {
+          substitute: absence.substitutions[0].substituteTeacher,
+          reason: absence.reason
+        })
+      }
+    })
+
+    // Process schedules: replace absent teachers with their substitutes
+    const schedulesWithSubstitutes = schedules.map(schedule => {
+      const substitutionInfo = absentTeacherMap.get(schedule.teacherId)
+      
+      if (substitutionInfo) {
+        // Teacher is absent and has a substitute
         return {
           ...schedule,
-          isSubstitute: false
+          originalTeacher: schedule.teacher,
+          teacher: substitutionInfo.substitute,
+          isSubstitute: true,
+          absenceReason: substitutionInfo.reason
         }
-      })
-    )
+      }
+
+      return {
+        ...schedule,
+        isSubstitute: false
+      }
+    })
 
     return NextResponse.json(schedulesWithSubstitutes)
   } catch (error) {
