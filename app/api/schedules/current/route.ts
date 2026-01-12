@@ -3,10 +3,12 @@ import prisma from "@/lib/prisma"
 
 export async function GET() {
   try {
+    // Use Greece timezone (Europe/Athens)
     const now = new Date()
-    const currentDay = now.getDay() // 0-6
-    const currentTime = now.toTimeString().slice(0, 5) // HH:MM format
-    const currentDate = now.toISOString().split('T')[0] // YYYY-MM-DD format
+    const greekTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Athens' }))
+    const currentDay = greekTime.getDay() // 0-6
+    const currentTime = greekTime.toTimeString().slice(0, 5) // HH:MM format
+    const currentDate = greekTime.toISOString().split('T')[0] // YYYY-MM-DD format
 
     const schedules = await prisma.schedule.findMany({
       where: {
