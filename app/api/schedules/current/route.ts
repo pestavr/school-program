@@ -62,38 +62,46 @@ export async function GET() {
         date: currentDate
       },
       include: {
-        teacher: true,
-        substitutions: {
-          include: {
-            substituteTeacher: true
-          }
-        }
+        teacher: true
       }
     })
 
-    // Build a map of absent teacher IDs to their substitutes
-    const absentTeacherMap = new Map()
-    todayAbsences.forEach(absence => {
-      if (absence.substitutions.length > 0) {
-        absentTeacherMap.set(absence.teacherId, {
-          substitute: absence.substitutions[0].substituteTeacher,
-          reason: absence.reason
-        })
-      }
+    // Get all substitutional teachers (available to cover absences)
+    const substitutionalTeachers = await prisma.schedule.findMany({
+      where: {
+        isSubstitutional: true
+      },
+      include: {
+        teacher: true
+      },
+      distinct: ['teacherId']
     })
 
-    // Process schedules: replace absent teachers with their substitutes
+    // Build a map of absent teacher IDs
+    const absentTeacherIds = new Set(todayAbsences.map(a => a.teacherId))
+    const absenceMap = new Map(todayAbsences.map(a => [a.teacherId, a]))
+
+    // Track which substitutional teachers have been assigned
+    let substitutionalIndex = 0
+
+    // Process schedules: replace absent teachers with substitutional teachers
     const schedulesWithSubstitutes = schedules.map(schedule => {
-      const substitutionInfo = absentTeacherMap.get(schedule.teacherId)
-      
-      if (substitutionInfo) {
-        // Teacher is absent and has a substitute
-        return {
-          ...schedule,
-          originalTeacher: schedule.teacher,
-          teacher: substitutionInfo.substitute,
-          isSubstitute: true,
-          absenceReason: substitutionInfo.reason
+      if (absentTeacherIds.has(schedule.teacherId)) {
+        // Teacher is absent, assign a substitutional teacher
+        const absence = absenceMap.get(schedule.teacherId)
+        
+        // Get next available substitutional teacher (round-robin)
+        if (substitutionalTeachers.length > 0) {
+          const substituteSchedule = substitutionalTeachers[substitutionalIndex % substitutionalTeachers.length]
+          substitutionalIndex++
+
+          return {
+            ...schedule,
+            originalTeacher: schedule.teacher,
+            teacher: substituteSchedule.teacher,
+            isSubstitute: true,
+            absenceReason: absence?.reason
+          }
         }
       }
 
