@@ -1,3 +1,3 @@
 {
-  "buildCommand": "cp prisma/schema.production.prisma prisma/schema.prisma && prisma generate && prisma migrate deploy && next build"
+  "buildCommand": "if [ -f prisma/schema.production.prisma ]; then cp prisma/schema.production.prisma prisma/schema.prisma; fi && prisma generate && next build"
 }
