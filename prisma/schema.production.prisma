@@ -1,12 +1,12 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Production Prisma schema (PostgreSQL for Vercel)
+// This file is used only for generating migrations for production
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,7 +25,7 @@ model Teacher {
   name      String
   email     String?
   phone     String?
-  subject   String?    // The subject/lesson the teacher teaches
+  subject   String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   schedules Schedule[] @relation("MainTeacher")
@@ -46,12 +46,12 @@ model Location {
 model Schedule {
   id                  String   @id @default(cuid())
   teacherId           String
-  locationId          String?  // Optional - not required for substitutional teachers
-  substituteTeacherId String?  // Optional backup teacher
-  isSubstitutional    Boolean  @default(false) // Marks if this teacher is substitutional
-  dayOfWeek           Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  startTime           String   // Format: "HH:MM"
-  endTime             String   // Format: "HH:MM"
+  locationId          String?
+  substituteTeacherId String?
+  isSubstitutional    Boolean  @default(false)
+  dayOfWeek           Int
+  startTime           String
+  endTime             String
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -68,7 +68,7 @@ model Schedule {
 model Absence {
   id          String         @id @default(cuid())
   teacherId   String
-  date        String         // Format: "YYYY-MM-DD"
+  date        String
   reason      String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -84,7 +84,7 @@ model Substitution {
   id                String   @id @default(cuid())
   absenceId         String
   substituteTeacherId String
-  scheduleId        String?  // Optional: specific schedule being covered
+  scheduleId        String?
   notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

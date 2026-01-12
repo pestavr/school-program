@@ -5,10 +5,37 @@ export async function GET() {
   try {
     // Use Greece timezone (Europe/Athens)
     const now = new Date()
-    const greekTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Athens' }))
-    const currentDay = greekTime.getDay() // 0-6
-    const currentTime = greekTime.toTimeString().slice(0, 5) // HH:MM format
-    const currentDate = greekTime.toISOString().split('T')[0] // YYYY-MM-DD format
+    
+    // Get components in Greek timezone
+    const greekTimeString = now.toLocaleString('en-US', { 
+      timeZone: 'Europe/Athens',
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      weekday: 'short'
+    })
+    
+    // Parse the Greek time components
+    const greekDate = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Athens' }))
+    const currentDay = greekDate.getDay() // 0-6
+    
+    // Get time in HH:MM format
+    const timeFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Athens',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+    const currentTime = timeFormatter.format(now) // HH:MM format
+    
+    // Get date in YYYY-MM-DD format
+    const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Athens'
+    })
+    const currentDate = dateFormatter.format(now) // YYYY-MM-DD format
 
     const schedules = await prisma.schedule.findMany({
       where: {
