@@ -72,11 +72,20 @@ export default function SchedulesManagement() {
         locationsRes.json()
       ])
 
-      setSchedules(schedulesData)
-      setTeachers(teachersData)
-      setLocations(locationsData)
+      // Ensure data is an array before setting state
+      setSchedules(Array.isArray(schedulesData) ? schedulesData : [])
+      setTeachers(Array.isArray(teachersData) ? teachersData : [])
+      setLocations(Array.isArray(locationsData) ? locationsData : [])
+      
+      // Log errors if any response is not an array
+      if (!Array.isArray(schedulesData)) console.error("Invalid schedules response:", schedulesData)
+      if (!Array.isArray(teachersData)) console.error("Invalid teachers response:", teachersData)
+      if (!Array.isArray(locationsData)) console.error("Invalid locations response:", locationsData)
     } catch (error) {
       console.error("Failed to fetch data:", error)
+      setSchedules([])
+      setTeachers([])
+      setLocations([])
     } finally {
       setLoading(false)
     }
