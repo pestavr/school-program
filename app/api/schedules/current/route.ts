@@ -62,7 +62,12 @@ export async function GET() {
         date: currentDate
       },
       include: {
-        teacher: true
+        teacher: true,
+        substitutions: {
+          include: {
+            substituteTeacher: true
+          }
+        }
       }
     })
 
@@ -77,31 +82,45 @@ export async function GET() {
       distinct: ['teacherId']
     })
 
-    // Build a map of absent teacher IDs
-    const absentTeacherIds = new Set(todayAbsences.map(a => a.teacherId))
-    const absenceMap = new Map(todayAbsences.map(a => [a.teacherId, a]))
-
-    // Track which substitutional teachers have been assigned
+    // Build a map: if manual substitution exists, use it; otherwise auto-assign
+    const absentTeacherMap = new Map()
     let substitutionalIndex = 0
 
-    // Process schedules: replace absent teachers with substitutional teachers
-    const schedulesWithSubstitutes = schedules.map(schedule => {
-      if (absentTeacherIds.has(schedule.teacherId)) {
-        // Teacher is absent, assign a substitutional teacher
-        const absence = absenceMap.get(schedule.teacherId)
-        
-        // Get next available substitutional teacher (round-robin)
+    todayAbsences.forEach(absence => {
+      if (absence.substitutions.length > 0) {
+        // Manual substitution exists - use it
+        absentTeacherMap.set(absence.teacherId, {
+          substitute: absence.substitutions[0].substituteTeacher,
+          reason: absence.reason,
+          isManual: true
+        })
+      } else {
+        // No manual substitution - auto-assign a substitutional teacher
         if (substitutionalTeachers.length > 0) {
           const substituteSchedule = substitutionalTeachers[substitutionalIndex % substitutionalTeachers.length]
           substitutionalIndex++
+          
+          absentTeacherMap.set(absence.teacherId, {
+            substitute: substituteSchedule.teacher,
+            reason: absence.reason,
+            isManual: false
+          })
+        }
+      }
+    })
 
-          return {
-            ...schedule,
-            originalTeacher: schedule.teacher,
-            teacher: substituteSchedule.teacher,
-            isSubstitute: true,
-            absenceReason: absence?.reason
-          }
+    // Process schedules: replace absent teachers with their substitutes
+    const schedulesWithSubstitutes = schedules.map(schedule => {
+      const substitutionInfo = absentTeacherMap.get(schedule.teacherId)
+      
+      if (substitutionInfo) {
+        // Teacher is absent and has a substitute
+        return {
+          ...schedule,
+          originalTeacher: schedule.teacher,
+          teacher: substitutionInfo.substitute,
+          isSubstitute: true,
+          absenceReason: substitutionInfo.reason
         }
       }
 
