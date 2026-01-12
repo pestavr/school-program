@@ -88,33 +88,8 @@ export default function AbsencesManagement() {
     }
   }
 
-  const handleSubstitutionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!selectedAbsence) return
-
-    try {
-      const response = await fetch("/api/substitutions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          absenceId: selectedAbsence.id,
-          ...substitutionFormData
-        })
-      })
-
-      if (response.ok) {
-        await fetchData()
-        setSelectedAbsence(null)
-        setSubstitutionFormData({
-          substituteTeacherId: "",
-          notes: ""
-        })
-      }
-    } catch (error) {
-      console.error("Failed to create substitution:", error)
-    }
-  }
+  // Substitutions are now automatic - no need for manual assignment
+  // Keeping this for backwards compatibility but it won't be used
 
   const handleDeleteAbsence = async (id: string) => {
     if (!confirm("Είστε σίγουροι ότι θέλετε να διαγράψετε αυτήν την απουσία;")) return
@@ -245,92 +220,13 @@ export default function AbsencesManagement() {
               </button>
             </div>
 
-            {absence.substitutions.length > 0 ? (
-              <div className="mt-4 border-t pt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Αναπληρωτής:</h4>
-                {absence.substitutions.map((sub) => (
-                  <div key={sub.id} className="flex items-center justify-between bg-green-50 p-3 rounded">
-                    <div>
-                      <p className="font-medium text-green-800">{sub.substituteTeacher.name}</p>
-                      {sub.notes && <p className="text-sm text-green-700">{sub.notes}</p>}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteSubstitution(sub.id)}
-                      className="text-sm text-red-600 hover:text-red-800"
-                    >
-                      Αφαίρεση
-                    </button>
-                  </div>
-                ))}
+            <div className="mt-4 border-t pt-4">
+              <div className="bg-blue-50 p-3 rounded">
+                <p className="text-sm text-blue-800">
+                  ℹ️ Ο αναπληρωτής καθηγητής ορίζεται αυτόματα από το σύστημα όταν υπάρχει απουσία.
+                </p>
               </div>
-            ) : (
-              <div className="mt-4 border-t pt-4">
-                {selectedAbsence?.id === absence.id ? (
-                  <form onSubmit={handleSubstitutionSubmit} className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Επιλέξτε Αναπληρωτή *
-                      </label>
-                      <select
-                        required
-                        value={substitutionFormData.substituteTeacherId}
-                        onChange={(e) =>
-                          setSubstitutionFormData({ ...substitutionFormData, substituteTeacherId: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                      >
-                        <option value="">Επιλέξτε καθηγητή</option>
-                        {teachers
-                          .filter((t) => t.id !== absence.teacherId)
-                          .map((teacher) => (
-                            <option key={teacher.id} value={teacher.id}>
-                              {teacher.name}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Σημειώσεις
-                      </label>
-                      <input
-                        type="text"
-                        value={substitutionFormData.notes}
-                        onChange={(e) =>
-                          setSubstitutionFormData({ ...substitutionFormData, notes: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
-                      >
-                        Ορισμός Αναπληρωτή
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedAbsence(null)
-                          setSubstitutionFormData({ substituteTeacherId: "", notes: "" })
-                        }}
-                        className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 transition"
-                      >
-                        Ακύρωση
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <button
-                    onClick={() => setSelectedAbsence(absence)}
-                    className="w-full bg-yellow-500 text-white py-2 rounded-md hover:bg-yellow-600 transition"
-                  >
-                    + Προσθήκη Αναπληρωτή
-                  </button>
-                )}
-              </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
