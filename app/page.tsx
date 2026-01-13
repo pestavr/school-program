@@ -108,7 +108,7 @@ export default function HomePage() {
         {/* Current Duties */}
         <div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            Τωρινή Εφημερία
+            Τώρα έχουν Εφημερία:
           </h2>
 
           {loading ? (
@@ -147,12 +147,12 @@ export default function HomePage() {
 
                   <div className="border-t pt-4">
                     <div className="flex items-center">
-                      <div className={`w-12 h-12 ${schedule.isSubstitute ? 'bg-yellow-500' : 'bg-blue-600'} rounded-full flex items-center justify-center text-white font-bold text-lg mr-3`}>
+                      <div className={`w-12 h-12 ${schedule.isSubstitute ? 'bg-yellow-500' : 'bg-blue-600'} rounded-full flex items-center lg:text-2xl justify-center text-white font-bold text-lg mr-3`}>
                         {schedule.teacher.name.charAt(0)}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-800">
+                          <p className="lg:text-2xl font-semibold text-gray-800">
                             {schedule.teacher.name}
                           </p>
                           {schedule.isSubstitute && (
@@ -168,7 +168,7 @@ export default function HomePage() {
                           </p>
                         )}
                         {schedule.teacher.subject && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm lg:text-lg text-gray-600">
                             {schedule.teacher.subject}
                           </p>
                         )}
